@@ -1,37 +1,54 @@
-1) Short intro (how we’ll solve it — RAG + context engineering)
+# My Approach to Building a Smart Q&A System
 
-I will solve this by using Retrieval-Augmented Generation (RAG) but replace heavy prompt-engineering with context engineering: for every user query we gather only the most relevant curated text (knowledge base chunks, docs, examples), assemble that as context with a small customizable prompt, and send both to the LLM. That keeps the model focused, reduces hallucination, and produces higher-quality answers because the LLM reasons over explicit supporting text instead of relying only on handcrafted prompt tricks.
+So here's how I'm tackling this problem. Instead of trying to craft perfect prompts (which honestly gets messy), I'm using something called RAG - basically grabbing the most relevant info from my knowledge base and feeding it directly to the AI along with the user's question. This way the AI has actual facts to work with instead of just guessing.
 
-2) Knowledge base — where data comes from, embedding choice, and why
+## Where I Get My Data From
 
-Data sources: corporate docs, textbooks, FAQs, API docs, past Q&A logs, scraped webpages (cleaned), PDFs, and trusted public datasets. Convert each source to plain text → split into chunks (200–800 tokens, overlap ~50 tokens) → store chunk metadata (source, page, offset).
+I pull information from all over the place - company documents, textbooks, FAQ pages, API documentation, old customer support tickets, web pages (cleaned up first), PDFs, and reliable public datasets. 
 
-Embedding model (one choice): sentence-transformers/all-MiniLM-L6-v2 (SBERT).
-Why this one?
+The process is pretty straightforward: I convert everything to plain text, chop it up into smaller pieces (usually 200-800 words with some overlap so I don't lose context), then store each piece with info about where it came from.
 
-Small and very fast for bulk indexing (lightweight for production and dev). 
-Hugging Face
-+1
+## My Embedding Setup
 
-Good semantic quality for typical RAG tasks with low storage and compute cost; easy to run locally or in a small server. 
-Milvus
+I went with `sentence-transformers/all-MiniLM-L6-v2` for turning text into vectors. Yeah, it's not the fanciest model out there, but it works great for what I need:
 
-How it creates mapping: each text chunk → embedding(vector) (e.g., 384-dim) and you store those vectors in a vector DB (FAISS/Chroma/Milvus). Retrieval = nearest-neighbor similarity (cosine or inner product) between query vector and chunk vectors.
+- It's small and fast - I can run it on my laptop without waiting forever
+- Good enough quality for finding similar text
+- Doesn't eat up storage space or computing power
+- Easy to set up locally
 
-Short code snippet — create embeddings & index with sentence-transformers + FAISS:
+Here's how the magic works: each chunk of text gets converted into a vector (basically a list of numbers that represents the meaning). When someone asks a question, I convert that to a vector too, then find the chunks with the most similar vectors. Simple but effective.
 
+## Quick Code Example
+
+Here's the basic setup I use:
+
+```python
 # pip install sentence-transformers faiss-cpu
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
-model = SentenceTransformer("all-MiniLM-L6-v2")   # recommended model
-docs = ["Array is a contiguous memory...", "..."]  # your chunks
-embs = model.encode(docs, show_progress_bar=True, convert_to_numpy=True)  # shape (N,384)
+# Load the model
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
-dim = embs.shape[1]
-index = faiss.IndexFlatIP(dim)   # inner-product (use cosine after normalizing)
-# normalize for cosine similarity
+# My text chunks (this would be your actual documents)
+docs = ["Array is a contiguous memory structure...", "Functions in Python..."]
+
+# Convert text to vectors
+embs = model.encode(docs, show_progress_bar=True, convert_to_numpy=True)
+
+# Set up the search index
+dim = embs.shape[1]  # usually 384 dimensions
+index = faiss.IndexFlatIP(dim)
+
+# Normalize for better similarity search
 faiss.normalize_L2(embs)
-index.add(embs)   # store vectors
-# save mapping from index id -> doc metadata separately (e.g. a DB or JSON)
+index.add(embs)
+
+# Remember to save a mapping of index positions to your actual documents
+```
+
+That's the foundation. When someone asks a question, I search through these vectors to find the most relevant chunks, then send those along with the question to the language model.
+
+---

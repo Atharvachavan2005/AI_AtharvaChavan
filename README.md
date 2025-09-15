@@ -1,7 +1,5 @@
 # AI-Powered RAG ➜ Slides ➜ Manim Video Pipeline
 
-## Solution in Plain English
-
 I combine Retrieval-Augmented Generation (RAG) with context engineering. Instead of crafting perfect prompts, I fetch the right text chunks and hand them to the LLM with the user's question. With full context, it writes clear slides and Python code for Manim animations. Result: accurate, personalized videos with minimal manual work.
 
 ## Building the Knowledge Base
