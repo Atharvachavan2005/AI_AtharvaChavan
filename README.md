@@ -15,4 +15,6 @@ Instead of squeezing everything into one clever prompt, we hand the LLM all the 
 | Embed | *Model:* text-embedding-ada-002 (OpenAI) | High quality, cheap, widely used in RAG tutorials[21] |
 | Store | *Vector DB:* Pinecone | Scales to millions of vectors with milliseconds latency |
 
+![WhatsApp Image 2025-09-15 at 13 27 40_a96ade56](https://github.com/user-attachments/assets/00b51b1e-55ee-4845-bd60-74cab7b78b6c)
+
 *Tiny example (Python):*
